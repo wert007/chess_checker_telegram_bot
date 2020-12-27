@@ -8,7 +8,7 @@ mod pgn_parser;
 use chessboard::ChessBoard;
 use chessboard_datatypes::{Color, GameResult};
 use futures::StreamExt;
-use image_gen::{generate_analyzable, generate_to_file};
+use image_gen::{generate_simple_view_to_file, generate_view_to_file};
 use pgn_parser::PGNMove;
 
 use telegram_bot::{
@@ -66,10 +66,10 @@ async fn main() -> Result<(), Error> {
 
                     if data.starts_with("/start") {
                         start_command(&mut context, &data[6..].trim_start()).await;
-                    } else if data.starts_with("/showclear") {
-                        show_clear_command(&mut context, &data[5..].trim_start()).await;
-                    } else if data.starts_with("/show") {
-                        show_command(&mut context, &data[5..].trim_start()).await;
+                    } else if data.starts_with("/simpleview") {
+                        simple_view_command(&mut context, &data[5..].trim_start()).await;
+                    } else if data.starts_with("/view") {
+                        view_command(&mut context, &data[5..].trim_start()).await;
                     } else if data.starts_with("/pgn") {
                         pgn_command(&mut context, &data[4..].trim_start()).await;
                     } else if data.starts_with("/fen") {
@@ -83,7 +83,7 @@ async fn main() -> Result<(), Error> {
                     } else if data.starts_with("/moves") {
                         moves_command(&mut context, &data[6..].trim_start()).await
                     } else if data.starts_with("/github") {
-                        context.send_text("https://github.com/wert007/....".to_string()).await;
+                        context.send_text("https://github.com/wert007/chess_checker_telegram_bot".to_string()).await;
                     } else {
                         play(&mut context, data.as_str()).await;
                     }
@@ -104,14 +104,14 @@ async fn start_command(context: &mut Context, _: &str) -> () {
     context.send_text(format!("New game started!")).await;
 }
 
-async fn show_command(context: &mut Context, _: &str) -> () {
-    let filename = generate_to_file(context.chessboard.to_fen());
+async fn view_command(context: &mut Context, _: &str) -> () {
+    let filename = generate_view_to_file(context.chessboard.to_fen());
     let caption = format!("{} to move.", context.chessboard.color_to_move);
     context.send_board(&filename, &caption).await;
 }
 
-async fn show_clear_command(context: &mut Context, _: &str) -> () {
-    let filename = generate_analyzable(context.chessboard.to_fen());
+async fn simple_view_command(context: &mut Context, _: &str) -> () {
+    let filename = generate_simple_view_to_file(context.chessboard.to_fen());
     let caption = format!("{} to move.", context.chessboard.color_to_move);
     context.send_board(&filename, &caption).await;
 }
@@ -141,7 +141,7 @@ async fn load_command(context: &mut Context, data: &str) -> () {
     context
         .send_text(format!("Cheesboard loaded. {} {}", result, error))
         .await;
-    show_command(context, data).await;
+    view_command(context, data).await;
 }
 
 async fn load_fen_command(context: &mut Context, data: &str) -> () {
@@ -154,7 +154,7 @@ async fn load_fen_command(context: &mut Context, data: &str) -> () {
             context
                 .send_text(format!("Cheesboard loaded. {}", result))
                 .await;
-            show_command(context, data).await;
+            view_command(context, data).await;
         }
         Err(err) => {
             context
@@ -247,7 +247,7 @@ async fn play(context: &mut Context, data: &str) {
             }
             Err(error) => {
                 context
-                    .send_text(format!("{} Use /show to view the board!", error))
+                    .send_text(format!("{} Use /view to view the board!", error))
                     .await
             }
             _ => {}

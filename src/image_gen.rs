@@ -29,7 +29,7 @@ fn overlay(top: Pixel, bottom: Pixel) -> Pixel {
 fn test() {
     let chessboard = crate::chessboard::ChessBoard::new();
 
-    generate_to_file(chessboard.to_fen());
+    generate_view_to_file(chessboard.to_fen());
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -190,14 +190,14 @@ impl ChessBoardSheet {
 }
 
 
-pub fn generate_analyzable(fen: String) -> String {
+pub fn generate_simple_view_to_file(fen: String) -> String {
     let sheet = Sheet::short("lichess", 0, 256, 32, 0);
-    let result = "generated/analyzable_chessboard.png".to_string();
+    let result = "generated/simple_view_chessboard.png".to_string();
     create_from_sheet(fen, &sheet, &result);
     result
 }
 
-pub fn generate_to_file(fen: String) -> String {
+pub fn generate_view_to_file(fen: String) -> String {
     let sheets = [
         Sheet::short("chessmaster", 0, 256, 32, 3),
         Sheet::short_with_vector(
@@ -244,7 +244,7 @@ pub fn generate_to_file(fen: String) -> String {
         .as_millis() as usize;
     let sheet = &sheets[index % sheets.len()];
     
-    let result = "generated/show_chessboard.png".to_string();
+    let result = "generated/view_chessboard.png".to_string();
     create_from_sheet(fen, sheet, &result);
     result
 }
