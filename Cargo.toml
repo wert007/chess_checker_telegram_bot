@@ -1,0 +1,17 @@
+[package]
+name = "rust_chess_tg_bot"
+version = "0.1.0"
+authors = ["wert007 <pablohamacher@web.de>"]
+edition = "2018"
+
+[dependencies]
+bytes = "0.5"
+tokio = { version = "0.2", features = ["fs"]}
+futures = "0.3"
+telegram-bot = "0.8.0"
+regex = "1.4.2" 
+image = "0.23.12"
+
+
+[dev-dependencies]
+tokio = { version = "0.2", features = ["macros", "time", "fs"] }
