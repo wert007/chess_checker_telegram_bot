@@ -267,7 +267,7 @@ fn create_from_sheet(fen: String, sheet: &ChessBoardSheet, output_path: &str) {
     coords.insert('q', (5, 1));
     let pieces_img = sheet.load_pieces_img().unwrap();
     let mut board_img = sheet.load_board_img().unwrap();
-    println!("{}", sheet.board.file_name);
+    // println!("{}", sheet.board.file_name);
     let mut x = 0;
     let mut y = 7;
     let mut fen = fen.chars();

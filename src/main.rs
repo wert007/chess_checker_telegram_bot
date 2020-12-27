@@ -6,7 +6,7 @@ mod image_gen;
 mod pgn_parser;
 
 use chessboard::ChessBoard;
-use chessboard_datatypes::{Color, GameResult};
+use chessboard_datatypes::{Color, GameError, GameResult};
 use futures::StreamExt;
 use image_gen::{generate_simple_view_to_file, generate_view_to_file};
 use pgn_parser::PGNMove;
@@ -132,20 +132,21 @@ async fn fen_command(context: &mut Context, _: &str) -> () {
 async fn load_command(context: &mut Context, data: &str) -> () {
     let (chessboard, error) = ChessBoard::from_pgn(data);
     context.chessboard = chessboard;
-    let result = if error == crate::chessboard_datatypes::Error::None {
+    let result = if error == GameError::None {
         context.chessboard.check_result()
     } else {
-        println!("{}", data);
+        // println!("{}", data);
         GameResult::None
     };
+    let spacing = if result == GameResult::None { "" } else { " "};
     context
-        .send_text(format!("Cheesboard loaded. {} {}", result, error))
+        .send_text(format!("Cheesboard loaded. {}{}{}", result, spacing, error))
         .await;
     view_command(context, data).await;
 }
 
 async fn load_fen_command(context: &mut Context, data: &str) -> () {
-    println!("{}", data);
+    // println!("{}", data);
     let chessboard = ChessBoard::from_fen(data);
     match chessboard {
         Ok(chessboard) => {

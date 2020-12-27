@@ -59,7 +59,7 @@ impl ChessBoard {
         }
     }
 
-    pub fn from_pgn(pgn: &str) -> (Self, Error) {
+    pub fn from_pgn(pgn: &str) -> (Self, GameError) {
         let mut result = Self::new();
         let (moves, mut error) = parse_pgn_moves(pgn);
         for mov in moves {
@@ -532,7 +532,7 @@ impl ChessBoard {
                 if let Some(en_passant) = self.en_passant_field {
                     let to_capture = Field(to.0, piece.position.1);
                     if en_passant != to_capture {
-                        println!("No en passant");
+                        // println!("No en passant");
                         return false;
                     }
                 }
@@ -582,20 +582,19 @@ impl ChessBoard {
         let piece = self.get_pieces_by_color(color);
         piece
             .into_iter()
-            // .filter(|p| p.get_all_moves(mov.captures).contains(&mov.target))
             .filter(|p| self.can_move_to(*p, target))
             .collect()
     }
 
-    pub fn play_pgn(&mut self, mov: PGNMove) -> Result<GameResult, Error> {
+    pub fn play_pgn(&mut self, mov: PGNMove) -> Result<GameResult, GameError> {
         if mov.is_castle {
             let result = self.play_castling(mov.is_short_castle);
-            println!(
-                "Played {} in #{} \n\n {}\n",
-                mov,
-                self.current_move_no(),
-                &self
-            );
+            // println!(
+            //     "Played {} in #{} \n\n {}\n",
+            //     mov,
+            //     self.current_move_no(),
+            //     &self
+            // );
             result
         } else {
             let piece_kind = PieceKind::from_char(mov.piece).expect(&format!("{}", mov));
@@ -632,10 +631,10 @@ impl ChessBoard {
             if piece.len() == 0 {
                 // let pieces = self.get_pieces_by(None, Some(self.color_to_move), None, optional_column);
                 let pieces = self.pieces_that_can_go_to(mov.target, self.color_to_move);
-                return Err(Error::NoPieceReaches(mov.target, pieces.into_iter().map(|p| p.to_owned()).collect(), mov));
+                return Err(GameError::NoPieceReaches(mov.target, pieces.into_iter().map(|p| p.to_owned()).collect(), mov));
             }
             if piece.len() > 1 {
-                return Err(Error::AmbiguousTarget(mov.target, piece.into_iter().map(|p| p.to_owned()).collect(), mov));
+                return Err(GameError::AmbiguousTarget(mov.target, piece.into_iter().map(|p| p.to_owned()).collect(), mov));
             }
             assert_eq!(
                 piece.len(),
@@ -655,7 +654,7 @@ impl ChessBoard {
             ));
             if let Some(promotion) = mov.optional_promotion {
                 if PieceKind::from_char(promotion).is_none() {
-                    return Err(Error::InvalidPromotionPiece(promotion, mov));
+                    return Err(GameError::InvalidPromotionPiece(promotion, mov));
                 }
             }
             let promotion = mov
@@ -664,12 +663,12 @@ impl ChessBoard {
 
             self.pgn_history.push(mov);
             let result = self.move_from_to(piece.position, mov.target, promotion, mov)?;
-            println!(
-                "Played {} in #{} \n\n {}\n",
-                mov,
-                self.current_move_no(),
-                &self
-            );
+            // println!(
+            //     "Played {} in #{} \n\n {}\n",
+            //     mov,
+            //     self.current_move_no(),
+            //     &self
+            // );
             Ok(result)
         }
     }
@@ -687,7 +686,7 @@ impl ChessBoard {
         self.piece_at_index(position).map(|i| self.pieces[i])
     }
 
-    pub fn play_castling(&mut self, is_short_castling: bool) -> Result<GameResult, Error> {
+    pub fn play_castling(&mut self, is_short_castling: bool) -> Result<GameResult, GameError> {
         self.set_castling(Castling::None);
         let color = self.color_to_move;
         let king = self.get_pieces_by(Some(King), Some(color), None, None,None)[0];
@@ -711,7 +710,7 @@ impl ChessBoard {
         let index = if let Some(index) = self.piece_at_index(rook_position) {
             index
         } else {
-            return Err(Error::NoPiece(rook_position, mov));
+            return Err(GameError::NoPiece(rook_position, mov));
         };
         let rook = self.pieces.get_mut(index).unwrap();
         let target = if is_short_castling {
@@ -762,7 +761,7 @@ impl ChessBoard {
         to: Field,
         promotion: Option<PieceKind>,
         extra: PGNMove,
-    ) -> Result<GameResult, Error> {
+    ) -> Result<GameResult, GameError> {
         let other = self.piece_at(to).clone();
         if let Some(other) = self.piece_at(to) {
             let index = self.pieces.iter().position(|p| p == &other).unwrap();
@@ -772,7 +771,7 @@ impl ChessBoard {
         let piece = if let Some(piece) = self.piece_at(from) {
             piece
         } else {
-            return Err(Error::NoPiece(from, extra));
+            return Err(GameError::NoPiece(from, extra));
         };
         if piece.kind == Rook {
             self.set_castling(if piece.index == 1 {
@@ -790,13 +789,13 @@ impl ChessBoard {
             }
             if to.1 == 7 || to.1 == 0 {
                 if promotion.is_none() {
-                    return Err(Error::PromotionExpected(to, extra));
+                    return Err(GameError::PromotionExpected(to, extra));
                 }
             }
         }
         let piece = self
             .piece_at_index(from)
-            .ok_or_else(|| Error::NoPiece(from, extra))?;
+            .ok_or_else(|| GameError::NoPiece(from, extra))?;
         let piece = self.pieces.get_mut(piece).unwrap();
         piece.move_to(to, promotion);
         self.color_to_move = self.color_to_move.invert();

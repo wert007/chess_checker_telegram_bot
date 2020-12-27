@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use regex::Regex;
 
-use crate::{chessboard_datatypes::{Error, Field}};
+use crate::{chessboard_datatypes::{GameError, Field}};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PGNMove {
@@ -160,10 +160,10 @@ fn _eat_whitespace(src: &str, index: usize) -> Option<usize> {
     Some(index)
 }
 
-pub fn parse_pgn_moves(src: &str) -> (Vec<PGNMove>, Error) {
+pub fn parse_pgn_moves(src: &str) -> (Vec<PGNMove>, GameError) {
     let mut result = vec![];
     let mut index = 0;
-    let mut error = Error::None;
+    let mut error = GameError::None;
     while src.chars().nth(index).is_some() {
         index = if let Some(index) = _eat_whitespace(src, index) {
             index
@@ -171,7 +171,7 @@ pub fn parse_pgn_moves(src: &str) -> (Vec<PGNMove>, Error) {
             break;
         };
         if !src.chars().nth(index).unwrap_or('\0').is_digit(10) {
-            error = Error::ParseErrorAt(index);
+            error = GameError::ParseErrorAt(index);
             eprintln!("Expected MoveIndex.");
             break;
         }
@@ -191,7 +191,7 @@ pub fn parse_pgn_moves(src: &str) -> (Vec<PGNMove>, Error) {
             index += len;
             result.push(mov);
         } else {
-            error = Error::ParseErrorAt(index);
+            error = GameError::ParseErrorAt(index);
             eprintln!("Expected Move. (white)");
             break;
         }
@@ -205,7 +205,7 @@ pub fn parse_pgn_moves(src: &str) -> (Vec<PGNMove>, Error) {
             index += len;
             result.push(mov);
         } else {
-            error = Error::ParseErrorAt(index);
+            error = GameError::ParseErrorAt(index);
             eprintln!("Expected Move. (black)");
             break;
         }
@@ -231,7 +231,7 @@ fn test_pgn_parser() -> Result<(), Box<dyn std::any::Any + Send>> {
             for i in 1..=files_to_parse / 4 {
                 let f = files_to_parse / 4 * n + i;
                 let (_, error) = parse_pgn_moves(&std::fs::read_to_string(format!("./pgn_tests/{}.pgn", f)).unwrap());
-                assert_eq!(error, Error::None, "Found error {:?} on file 'pgn_tests/{}.pgn'.", error, f);
+                assert_eq!(error, GameError::None, "Found error {:?} on file 'pgn_tests/{}.pgn'.", error, f);
             }
         }));
     }

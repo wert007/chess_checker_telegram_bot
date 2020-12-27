@@ -508,7 +508,7 @@ pub enum Castling {
 
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Error {
+pub enum GameError {
     None,
     ParseErrorAt(usize),
     InvalidPromotionPiece(char, PGNMove),
@@ -540,24 +540,24 @@ fn fmt_pgn_moves(
     }
 }
 
-impl Display for Error {
+impl Display for GameError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Error::None => write!(f, ""),
-            Error::ParseErrorAt(pos) => write!(f, "Could not read PGN at position {}.", pos),
-            Error::InvalidPromotionPiece(piece, _) => write!(
+            GameError::None => write!(f, ""),
+            GameError::ParseErrorAt(pos) => write!(f, "Could not read PGN at position {}.", pos),
+            GameError::InvalidPromotionPiece(piece, _) => write!(
                 f,
                 "'{}' can't be promoted. Only Q,R,B,N can be promoted from a pawn.",
                 piece
             ),
-            Error::PromotionExpected(pos, mov) => write!(
+            GameError::PromotionExpected(pos, mov) => write!(
                 f,
                 "No pawn can be placed at {}. Use {}=<Piece> where Piece is one of Q, R, B, or N.",
                 pos,
                 mov,
             ),
-            Error::NoPiece(pos, _) => write!(f, "There is no piece at {}.", pos),
-            Error::NoPieceReaches(pos, pieces, mov) => {
+            GameError::NoPiece(pos, _) => write!(f, "There is no piece at {}.", pos),
+            GameError::NoPieceReaches(pos, pieces, mov) => {
                 
                 if pieces.len() > 0 {
                     write!(f, "{} cannot be played. Try ", mov)?;
@@ -568,7 +568,7 @@ impl Display for Error {
                     Ok(())
                 }
             }
-            Error::AmbiguousTarget(pos, pieces, _) => {
+            GameError::AmbiguousTarget(pos, pieces, _) => {
                 write!(f, "Multiple pieces can reach {}.", pos)?;
                 let mut pieces_copy = pieces.clone();
                 pieces_copy.dedup_by_key(|p| p.kind);
