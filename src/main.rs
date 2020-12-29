@@ -196,7 +196,7 @@ async fn moves_command(context: &mut Context, _: &str) -> () {
 
 async fn should_abort_because_of_player(context: &mut Context) -> bool {
     let message = context.message.as_ref().unwrap();
-    if context.chessboard.color_to_move.invert() == Color::White {
+    if context.chessboard.color_to_move == Color::White {
         if let Some(white) = &context.white_player {
             if white.id != message.from.id {
                 context
