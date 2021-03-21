@@ -8,9 +8,14 @@ and how they are read in you can see in src/image_gen.rs on the Sheet structs
 [BoardSheet, PieceSheet, ChessBoardSheet] and generate_... functions), create
 your token with BotFather in telegram and put the token in token.txt and 
 build it all with rustup.
-The code is admittedly really bad commented, since this was just a simple side
+~~The code is admittedly really bad commented, since this was just a simple side
 project for myself with little intention to be published. Maybe I will add some
-over time. If not just create an issue if you don't understand something and 
+over time.~~ _I added comments to all files except src/chessboard.rs. The code
+is actually quite bad at quite some places.. Maybe I will deliver the last
+missing comments. I added those because I've seen another uncommented project,
+which I didn't like. I'm sure something like this will happen again.._
+
+If not just create an issue if you don't understand something and 
 I'll try to answer asap.
 
 ## The commands

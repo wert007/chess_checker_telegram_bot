@@ -6,7 +6,10 @@ use image::{png::PngEncoder, Rgba};
 
 type Pixel = Rgba<u8>;
 
+/// This is alpha blending between two pixels.
 fn overlay(top: Pixel, bottom: Pixel) -> Pixel {
+    // A lot of clunky conversion. Today I would write the code a lot different
+    // (I hope).
     let top_floats: Vec<f64> = top.0.iter().map(|c| *c as f64 / 255.0).collect();
     let bottom_floats: Vec<f64> = bottom.0.iter().map(|c| *c as f64 / 255.0).collect();
     let top_floats: Vec<f64> = top_floats.iter().map(|c| c * top_floats[3]).collect();
@@ -25,6 +28,7 @@ fn overlay(top: Pixel, bottom: Pixel) -> Pixel {
     Rgba::<u8>(combined)
 }
 
+/// This test is mostly to quickly generate a new image.
 #[test]
 fn test() {
     let chessboard = crate::chessboard::ChessBoard::new();
@@ -32,22 +36,43 @@ fn test() {
     generate_view_to_file(chessboard.to_fen());
 }
 
+/// [`Vector`] and [`VectorI32`] are used to apply transformations and positions
+/// on the image for the pieces.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct Vector(u32, u32);
+/// [`Vector`] and [`VectorI32`] are used to apply transformations and positions
+/// on the image for the pieces.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct VectorI32(i32, i32);
 
+/// A [`BoardSheet`] contains all the data to transform pieces on a certain
+/// tile -> pixel position on the board/image.
 #[derive(Debug, Clone)]
 struct BoardSheet {
+    /// Offset from top left to the start of the board. If the image has a
+    /// border you can set that here. In Pixel.
     offset: Vector,
+    /// The size of the board inside the image. In Pixel 
     size: Vector,
+    /// The size of a single tile on the board. If plane != 0.0 the bottom left
+    /// tile is used.
     tile_size: Vector,
+    /// The Skew transforms a tile column, so that tiles above each other can
+    /// have different x-coordiantes eg. The skew is in pixel per tile basis.
+    /// (If your tiles move 16 px per row to the right, 
+    ///             skew would be VectorI32(16, 0))
     skew: VectorI32,
+    /// The plane makes the board 3d. The farther away a tile is (the farther
+    /// to the top) the smaller it is. Just guess with a value.
     plane: f64,
+    /// The file name to the actual image which is used.
     file_name: String,
 }
 
 impl BoardSheet {
+    /// [`x`] and [`y`] are the column and row of a piece (0..7). [`piece_size`]
+    /// is the size of the piece in pixel.
+    /// returns the position of the piece in pixel.
     fn to_position(&self, x: i32, y: i32, piece_size: Vector) -> VectorI32 {
         let x_tiles = x * self.tile_size.0 as i32;
         let x_skew = y * self.skew.0;
@@ -63,15 +88,21 @@ impl BoardSheet {
         VectorI32(x_new, y_new)
     }
 
+    /// Checks if pos is pixel position on the board.
     fn contains(&self, pos: VectorI32) -> bool {
         pos.0 >= 0 && pos.1 >= 0 && pos.0 < self.size.0 as i32 && pos.1 < self.size.1 as i32
     }
 }
 
+
+/// A [`PieceSheet`] contains all the data off pieces in a sprite sheet.
 #[derive(Debug, Clone)]
 struct PieceSheet {
+    /// The size of the biggest piece.
     size: Vector,
+    /// The offset of the pieces to the left bottom of a tile
     offset: Vector,
+    /// The file name of the sprite sheet.
     file_name: String,
 }
 
@@ -83,12 +114,14 @@ impl PieceSheet {
 
 
 type Sheet = ChessBoardSheet;
+/// Combines the [`PieceSheet`] with the [`BoardSheet`].
 struct ChessBoardSheet {
     pieces: PieceSheet,
     board: BoardSheet,
 }
 
 impl ChessBoardSheet {
+    // Simple Constructor.
     fn short(name: &str, offset: u32, size: u32, tile_size: u32, piece_offset_y: u32) -> Self {
         Self {
             pieces: PieceSheet {
@@ -107,6 +140,7 @@ impl ChessBoardSheet {
         }
     }
 
+    // Simple Constructor with 2d values.
     fn short_with_vector(
         name: &str,
         offset: Vector,
@@ -133,6 +167,7 @@ impl ChessBoardSheet {
         }
     }
 
+    // Complete Constructor.
     fn full(
         name: &str,
         offset: Vector,
@@ -160,10 +195,14 @@ impl ChessBoardSheet {
         }
     }
 
+    /// [`x`] and [`y`] are the column and row of a piece (0..7). [`piece_size`]
+    /// is the size of the piece in pixel.
+    /// returns the position of the piece in pixel.
     fn to_position(&self, x: i32, y: i32) -> VectorI32 {
         self.board.to_position(x, y, self.pieces.actual_size())
     }
 
+    /// Loads pieces.file_name and returns the image data.
     fn load_pieces_img(&self) -> Result<ImageBuffer<Rgba<u8>, Vec<u8>>, ImageError> {
         let pieces_img =
             ImageReader::open(format!("./gfx/pieces/{}.png", self.pieces.file_name))?.decode()?;
@@ -176,6 +215,7 @@ impl ChessBoardSheet {
         Ok(result.clone())
     }
 
+    /// Loads board.file_name and returns the image data.
     fn load_board_img(&self) -> Result<ImageBuffer<Rgba<u8>, Vec<u8>>, ImageError> {
         let board_img =
             ImageReader::open(format!("./gfx/boards/{}.png", self.board.file_name))?.decode()?;
@@ -189,7 +229,7 @@ impl ChessBoardSheet {
     }
 }
 
-
+/// Simple view uses a simple from lichess inspired representation.
 pub fn generate_simple_view_to_file(fen: String) -> String {
     let sheet = Sheet::short("lichess", 0, 256, 32, 0);
     let result = "generated/simple_view_chessboard.png".to_string();
@@ -197,6 +237,7 @@ pub fn generate_simple_view_to_file(fen: String) -> String {
     result
 }
 
+/// Uses a random spritesheet from multiple classics.
 pub fn generate_view_to_file(fen: String) -> String {
     let sheets = [
         Sheet::short("chessmaster", 0, 256, 32, 3),
@@ -238,6 +279,7 @@ pub fn generate_view_to_file(fen: String) -> String {
             VectorI32(28, 14),
         ),
     ];
+    // Use the current time as random value, since we are cheap.
     let index = std::time::SystemTime::UNIX_EPOCH
         .elapsed()
         .unwrap()
@@ -250,8 +292,11 @@ pub fn generate_view_to_file(fen: String) -> String {
 }
 
 
-
+/// Takes a FEN encoded positioning, a sheet (kind of like a skin.) and the
+/// output path in which the resulting image should be saved.
 fn create_from_sheet(fen: String, sheet: &ChessBoardSheet, output_path: &str) {
+    // Contains the tile coordinates of the multiple pieces. Naming comes from
+    // FEN.
     let mut coords = HashMap::new();
     coords.insert('P', (0, 0));
     coords.insert('K', (1, 0));
@@ -273,28 +318,38 @@ fn create_from_sheet(fen: String, sheet: &ChessBoardSheet, output_path: &str) {
     let mut fen = fen.chars();
     loop {
         match fen.next() {
+            // A new row begins
             Some('/') => {
                 x = 0;
                 y -= 1;
             }
+            // White space means the positioning of the FEN string is over.
             Some(' ') => {
                 break;
             }
+            // Digits skip [`d`] columns.
             Some(d) if d.is_digit(10) => {
                 x += d.to_string().parse::<i32>().unwrap();
             }
+            // Everything else must be a piece
             Some(c) => {
+                // Tile coord of the piece in its spritesheet
                 let coord = coords.get(&c);
+                // Target pixel position for the piece.
                 let pos = sheet.to_position(x, y);
                 if let Some(coord) = coord {
+                    // for each pixel...
                     for y_board in 0..sheet.pieces.size.1 {
                         for x_board in 0..sheet.pieces.size.0 {
                             let pos = VectorI32(pos.0 + x_board as i32, pos.1 + y_board as i32);
+                            // Pieces can reach outside of the image, in that
+                            // case skip to the next pixel.
                             if !sheet.board.contains(pos) {
                                 continue;
                             }
                             let x = pos.0 as u32;
                             let y = pos.1 as u32;
+                            // Overlaying the pixels of the piece on to the board
                             board_img.put_pixel(
                                 x,
                                 y,
@@ -308,18 +363,20 @@ fn create_from_sheet(fen: String, sheet: &ChessBoardSheet, output_path: &str) {
                             )
                         }
                     }
+                    // A piece also means we increase the column
                     x += 1;
-                } else if c == ' ' {
-                    break;
                 } else {
+                    // In case we got a malformed FEN from OUR engine, we may
+                    // panic..
                     panic!("Unexpected '{}' in fen", c);
                 }
             }
+            // The string is over..
             None => break,
         }
     }
 
-    
+    // Write board_img to the output_path.
     let output = File::create(output_path).unwrap();
     let d = PngEncoder::new(&output);
     d.encode(
